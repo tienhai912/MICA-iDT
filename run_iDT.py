@@ -49,7 +49,7 @@ if __name__ == '__main__':
             if exc.errno != errno.EEXIST:
               raise
 
-        zip= zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED)
+        zip = zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED)
         zip.write(out_features_path, arcname=out_features_name)
         zip.close()
         # Write out.features file

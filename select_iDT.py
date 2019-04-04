@@ -1,7 +1,14 @@
 import numpy as np
 import os
 import zipfile
+from datetime import datetime
 # import cv2
+
+def list_all_folders_in_a_directory(directory):
+  folder_list = (folder_name for folder_name in os.listdir(directory)
+    if os.path.isdir(os.path.join(directory, folder_name)))
+  return folder_list
+  pass
 
 def unzip_file(zip_file, unzip_folder):
   with zipfile.ZipFile(zip_file, "r") as zip_ref:
@@ -23,6 +30,61 @@ def sort_matrix_by_column_desc(matrix, column_num):
 
 def merge_two_matrices_row_by_row(matrix1, matrix2):
   return np.concatenate((matrix1, matrix2), axis=1)
+
+def add_row_number_to_matrix(matrix):
+  return merge_two_matrices_row_by_row(np.arange(matrix.shape[0]).reshape((-1, 1)), matrix)
+
+def sort_trajectory(file_path, column_num):
+  out_features_name = 'out_features.txt'
+  zip_file_name = 'output.zip'
+  sorted_by_length = 'out_features_sorted_by_length.txt'
+  sorted_by_length_zip = 'out_features_sorted_by_length.zip'
+
+  unzip_file(os.path.join(file_path, zip_file_name), file_path)
+
+  feature_matrix = read_features_out(os.path.join(file_path, out_features_name))
+
+  # Add ID (or row number) to the first column
+  feature_matrix =  add_row_number_to_matrix(feature_matrix)
+  # 6 = length column
+  feature_matrix = sort_matrix_by_column_desc(feature_matrix, column_num + 1)
+
+  with open(os.path.join(file_path, sorted_by_length),'wb') as f:
+    np.savetxt(f, feature_matrix, fmt='%7f', delimiter='\t')
+
+
+  with zipfile.ZipFile(os.path.join(file_path, sorted_by_length_zip), 'w', zipfile.ZIP_DEFLATED) as zip:
+    zip.write(os.path.join(file_path, sorted_by_length), arcname=sorted_by_length)
+    zip.close()
+
+  os.remove(os.path.join(file_path, out_features_name))
+  # os.remove(os.path.join(file_path, sorted_by_length))
+
+def run_sort_by_length():
+  start = datetime.now()
+  original_length_column = 5
+  input_root_folder = '/home/dangmanhtruong95/NTHai/iDT_output/'
+
+  people = ['Giang', 'Hai', 'Long', 'Minh', 'Thuan', 'Thuy', 'Tuyen']
+  kinects = ['Kinect_1', 'Kinect_2', 'Kinect_3', 'Kinect_4', 'Kinect_5']
+
+  # people = ['Giang']
+  # kinects = ['Kinect_1']
+
+  for person in people:
+    for kinect in kinects:
+      file_list = list_all_folders_in_a_directory(os.path.join(input_root_folder, person, kinect))
+      # file_list = ['10_1', '10_2']
+      for file in file_list:
+        temp_start = datetime.now()
+
+        input_features_folder = os.path.join(input_root_folder, person, kinect, file)
+        sort_trajectory(input_features_folder, original_length_column)
+
+        print('Finished ' + input_features_folder + ' at ' + str(datetime.now()) + ' in ' + str(datetime.now() - temp_start))
+
+  print('Finished all at ' + str(datetime.now()) + ' in ' + str(datetime.now() - start))
+
 
 def draw_image(image, row, index):
   for j in range(index - 1):
@@ -58,12 +120,13 @@ def test_draw(video):
   cap.release()
   cv2.destroyAllWindows()
 
-if __name__ == '__main__':
+def test_sort():
   TEST_FOLDER = 'C:/Users/TienHai/Desktop/iDT/run_iDT/7_1'
   out_features_name = 'out_features.txt'
   out_points_name = 'out_points.txt'
   zip_file_name = 'output.zip'
   input_video = 'video.avi'
+  sorted_out_features_name = 'out_features_sorted_by_length.txt'
 
   # test_content = read_features_out(TEST_FILE)
   # print(test_content[-1][-1])
@@ -73,16 +136,24 @@ if __name__ == '__main__':
   feature_matrix = read_features_out(os.path.join(TEST_FOLDER, out_features_name))
   point_matrix = read_features_out(os.path.join(TEST_FOLDER, out_points_name))
 
-  merge_matrix = merge_two_matrices_row_by_row(feature_matrix, point_matrix)
+  # merge_matrix = merge_two_matrices_row_by_row(feature_matrix, point_matrix)
 
-  # print(matrix[0][1]+matrix[0][0])
-  # print(type(matrix))
+  # merge_matrix =  add_row_number_to_matrix(merge_matrix)
 
-  test_matrix = merge_matrix[0:10]
-  test_matrix = sort_matrix_by_column_desc(test_matrix, 5)
-  test_matrix = test_matrix[0:10]
-  print(test_matrix[0:1,439:469])
-  print(test_matrix[0:1,-1])
+  # print(type(merge_matrix))
+  # print(merge_matrix[0:5,0:3])
+  # print(merge_matrix.shape[0])
+
+  # test_matrix = merge_matrix[0:10]
+
+  # test_matrix = sort_matrix_by_column_desc(test_matrix, 6)
+
+  # test_matrix = test_matrix[0:10]
+  # print(test_matrix[0:1,439:469])
+  # print(test_matrix[0:1,439:-1])
+  # print(test_matrix[0:1,-1])
+  # print(test_matrix[0:10,0:10])
+
 
   # print([i for i in range(10,40,2)])
   # print('Length: ' + str(matrix[0, 5]))
@@ -97,4 +168,14 @@ if __name__ == '__main__':
   # save_out(TEST_FOLDER + 'out.features__2', matrix)
   # a = a[np.argsort( a[:,1] )]
 
+  # sorted_feature_matrix = np.loadtxt(os.path.join(TEST_FOLDER, sorted_out_features_name), delimiter='\t')
+  # print(sorted_feature_matrix)
+  # print(type(sorted_feature_matrix))
+  print(point_matrix)
+  print(type(point_matrix))
+
   os.remove(os.path.join(TEST_FOLDER, out_features_name))
+
+
+if __name__ == '__main__':
+  test_sort()
