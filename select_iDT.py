@@ -2,7 +2,13 @@ import numpy as np
 import os
 import zipfile
 from datetime import datetime
-# import cv2
+import logging
+
+for handler in logging.root.handlers[:]:
+  logging.root.removeHandler(handler)
+
+logging.basicConfig(filename='select_iDT.log', level=logging.INFO, format='%(asctime)s %(levelname)-8s %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger('Hai')
 
 def list_all_folders_in_a_directory(directory):
   folder_list = (folder_name for folder_name in os.listdir(directory)
@@ -48,9 +54,11 @@ def sort_trajectory(file_path, column_num):
   feature_matrix =  add_row_number_to_matrix(feature_matrix)
   # 6 = length column
   feature_matrix = sort_matrix_by_column_desc(feature_matrix, column_num + 1)
+  # Take top 200 features
+  save_matrix = feature_matrix[:200]
 
   with open(os.path.join(file_path, sorted_by_length),'wb') as f:
-    np.savetxt(f, feature_matrix, fmt='%7f', delimiter='\t')
+    np.savetxt(f, save_matrix, fmt='%7f', delimiter='\t')
 
 
   with zipfile.ZipFile(os.path.join(file_path, sorted_by_length_zip), 'w', zipfile.ZIP_DEFLATED) as zip:
@@ -58,7 +66,7 @@ def sort_trajectory(file_path, column_num):
     zip.close()
 
   os.remove(os.path.join(file_path, out_features_name))
-  # os.remove(os.path.join(file_path, sorted_by_length))
+  os.remove(os.path.join(file_path, sorted_by_length))
 
 def run_sort_by_length():
   start = datetime.now()
@@ -73,52 +81,17 @@ def run_sort_by_length():
 
   for person in people:
     for kinect in kinects:
-      file_list = list_all_folders_in_a_directory(os.path.join(input_root_folder, person, kinect))
-      # file_list = ['10_1', '10_2']
-      for file in file_list:
+      folder_list = list_all_folders_in_a_directory(os.path.join(input_root_folder, person, kinect))
+      # folder_list = ['10_1', '10_2']
+      for folder in folder_list:
         temp_start = datetime.now()
 
-        input_features_folder = os.path.join(input_root_folder, person, kinect, file)
+        input_features_folder = os.path.join(input_root_folder, person, kinect, folder)
         sort_trajectory(input_features_folder, original_length_column)
 
-        print('Finished ' + input_features_folder + ' at ' + str(datetime.now()) + ' in ' + str(datetime.now() - temp_start))
+        logger.info('Finished ' + input_features_folder + ' in ' + str(datetime.now() - temp_start))
 
-  print('Finished all at ' + str(datetime.now()) + ' in ' + str(datetime.now() - start))
-
-
-def draw_image(image, row, index):
-  for j in range(index - 1):
-    x = row[j * 2]
-    y = row[j * 2 + 1]
-
-    cv2.line(image, (row[j * 2], row[j * 2  + 1]), (row[j * 2  + 2], row[j * 2  + 3]), (0, 255.0*(j+1.0)/(index+1), 0), 2, 8, 0)
-
-  circle(image, (row[index * 2 - 2], row[index * 2  - 1]), 2, Scalar(0,0,255), -1, 8, 0);
-  return image
-
-def test_draw(video):
-  cap = cv2.VideoCapture(video)
-  fourcc = cap.get(CV_CAP_PROP_FOURCC)
-  fps = cap.get(CV_CAP_PROP_FPS)
-  width = cap.get(CV_CAP_PROP_FRAME_WIDTH)
-  height = cap.get(CV_CAP_PROP_FRAME_HEIGHT)
-  out = cv2.VideoWriter('out_video.avi', fourcc, fps, (width, height))
-
-  success, image = cap.read()
-  count = 0
-  while success:
-    success, image = cap.read()
-
-
-    # Todo
-    # if count = matrix_frame_num:
-    #   image = draw_image(image, )
-
-    count += 1
-
-
-  cap.release()
-  cv2.destroyAllWindows()
+  logger.info('Finished all in ' + str(datetime.now() - start))
 
 def test_sort():
   TEST_FOLDER = 'C:/Users/TienHai/Desktop/iDT/run_iDT/7_1'
@@ -178,4 +151,5 @@ def test_sort():
 
 
 if __name__ == '__main__':
-  test_sort()
+  logger.info('Start')
+  run_sort_by_length()
