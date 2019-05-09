@@ -3,3 +3,4 @@
 
 # File
 *.zip
+!spec/*.zip

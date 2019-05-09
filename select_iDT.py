@@ -32,7 +32,7 @@ def save_out(file_path, data):
     np.savetxt(f, data, delimiter='\t')
 
 def sort_matrix_by_column_desc(matrix, column_num):
-  return matrix[matrix[:,column_num].argsort()[::-1]]
+  return matrix[matrix[:, column_num].argsort()[::-1]]
 
 def merge_two_matrices_row_by_row(matrix1, matrix2):
   return np.concatenate((matrix1, matrix2), axis=1)
